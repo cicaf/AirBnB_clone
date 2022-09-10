@@ -1,195 +1,129 @@
 #!/usr/bin/python3
-"""Defines unittests for models/city.py.
-
-Unittest classes:
-    TestCity_instantiation
-    TestCity_save
-    TestCity_to_dict
-"""
-import os
-import models
+"""module for testing user class"""
 import unittest
 from datetime import datetime
 from time import sleep
 from models.city import City
+from models.base_model import BaseModel
+from unittest.mock import patch
+import pycodestyle
+import models
+# import pep8
 
 
-class TestCity_instantiation(unittest.TestCase):
-    """Unittests for testing instantiation of the City class."""
+class Test_PEP8(unittest.TestCase):
+    """test User"""
 
-    def test_no_args_instantiates(self):
-        self.assertEqual(City, type(City()))
-
-    def test_new_instance_stored_in_objects(self):
-        self.assertIn(City(), models.storage.all().values())
-
-    def test_id_is_public_str(self):
-        self.assertEqual(str, type(City().id))
-
-    def test_created_at_is_public_datetime(self):
-        self.assertEqual(datetime, type(City().created_at))
-
-    def test_updated_at_is_public_datetime(self):
-        self.assertEqual(datetime, type(City().updated_at))
-
-    def test_state_id_is_public_class_attribute(self):
-        cy = City()
-        self.assertEqual(str, type(City.state_id))
-        self.assertIn("state_id", dir(cy))
-        self.assertNotIn("state_id", cy.__dict__)
-
-    def test_name_is_public_class_attribute(self):
-        cy = City()
-        self.assertEqual(str, type(City.name))
-        self.assertIn("name", dir(cy))
-        self.assertNotIn("name", cy.__dict__)
-
-    def test_two_cities_unique_ids(self):
-        cy1 = City()
-        cy2 = City()
-        self.assertNotEqual(cy1.id, cy2.id)
-
-    def test_two_cities_different_created_at(self):
-        cy1 = City()
-        sleep(0.05)
-        cy2 = City()
-        self.assertLess(cy1.created_at, cy2.created_at)
-
-    def test_two_cities_different_updated_at(self):
-        cy1 = City()
-        sleep(0.05)
-        cy2 = City()
-        self.assertLess(cy1.updated_at, cy2.updated_at)
-
-    def test_str_representation(self):
-        dt = datetime.today()
-        dt_repr = repr(dt)
-        cy = City()
-        cy.id = "123456"
-        cy.created_at = cy.updated_at = dt
-        cystr = cy.__str__()
-        self.assertIn("[City] (123456)", cystr)
-        self.assertIn("'id': '123456'", cystr)
-        self.assertIn("'created_at': " + dt_repr, cystr)
-        self.assertIn("'updated_at': " + dt_repr, cystr)
-
-    def test_args_unused(self):
-        cy = City(None)
-        self.assertNotIn(None, cy.__dict__.values())
-
-    def test_instantiation_with_kwargs(self):
-        dt = datetime.today()
-        dt_iso = dt.isoformat()
-        cy = City(id="345", created_at=dt_iso, updated_at=dt_iso)
-        self.assertEqual(cy.id, "345")
-        self.assertEqual(cy.created_at, dt)
-        self.assertEqual(cy.updated_at, dt)
-
-    def test_instantiation_with_None_kwargs(self):
-        with self.assertRaises(TypeError):
-            City(id=None, created_at=None, updated_at=None)
+    def test_pep8_user(self):
+        """test pep8 style"""
+        pep8style = pycodestyle.StyleGuide(quiet=True)
+        result = pep8style.check_files(['models/city.py'])
+        self.assertEqual(result.total_errors, 0,
+                         "Found code style errors (and warnings).")
 
 
-class TestCity_save(unittest.TestCase):
-    """Unittests for testing save method of the City class."""
+class test_docstrings(unittest.TestCase):
 
     @classmethod
-    def setUp(self):
-        try:
-            os.rename("file.json", "tmp")
-        except IOError:
-            pass
+    def setup_class(self):
+        """Setup for docstring"""
+        self.user_1 = City()
 
-    def tearDown(self):
-        try:
-            os.remove("file.json")
-        except IOError:
-            pass
-        try:
-            os.rename("tmp", "file.json")
-        except IOError:
-            pass
-
-    def test_one_save(self):
-        cy = City()
-        sleep(0.05)
-        first_updated_at = cy.updated_at
-        cy.save()
-        self.assertLess(first_updated_at, cy.updated_at)
-
-    def test_two_saves(self):
-        cy = City()
-        sleep(0.05)
-        first_updated_at = cy.updated_at
-        cy.save()
-        second_updated_at = cy.updated_at
-        self.assertLess(first_updated_at, second_updated_at)
-        sleep(0.05)
-        cy.save()
-        self.assertLess(second_updated_at, cy.updated_at)
-
-    def test_save_with_arg(self):
-        cy = City()
-        with self.assertRaises(TypeError):
-            cy.save(None)
-
-    def test_save_updates_file(self):
-        cy = City()
-        cy.save()
-        cyid = "City." + cy.id
-        with open("file.json", "r") as f:
-            self.assertIn(cyid, f.read())
+    def test_docstrings(self):
+        """test documentation"""
+        self.assertIsNotNone(City.__doc__, "city.py needs a docstring")
 
 
-class TestCity_to_dict(unittest.TestCase):
-    """Unittests for testing to_dict method of the City class."""
-
-    def test_to_dict_type(self):
-        self.assertTrue(dict, type(City().to_dict()))
-
-    def test_to_dict_contains_correct_keys(self):
-        cy = City()
-        self.assertIn("id", cy.to_dict())
-        self.assertIn("created_at", cy.to_dict())
-        self.assertIn("updated_at", cy.to_dict())
-        self.assertIn("__class__", cy.to_dict())
-
-    def test_to_dict_contains_added_attributes(self):
-        cy = City()
-        cy.middle_name = "Holberton"
-        cy.my_number = 98
-        self.assertEqual("Holberton", cy.middle_name)
-        self.assertIn("my_number", cy.to_dict())
-
-    def test_to_dict_datetime_attributes_are_strs(self):
-        cy = City()
-        cy_dict = cy.to_dict()
-        self.assertEqual(str, type(cy_dict["id"]))
-        self.assertEqual(str, type(cy_dict["created_at"]))
-        self.assertEqual(str, type(cy_dict["updated_at"]))
-
-    def test_to_dict_output(self):
-        dt = datetime.today()
-        cy = City()
-        cy.id = "123456"
-        cy.created_at = cy.updated_at = dt
-        tdict = {
-            'id': '123456',
-            '__class__': 'City',
-            'created_at': dt.isoformat(),
-            'updated_at': dt.isoformat(),
-        }
-        self.assertDictEqual(cy.to_dict(), tdict)
-
-    def test_contrast_to_dict_dunder_dict(self):
-        cy = City()
-        self.assertNotEqual(cy.to_dict(), cy.__dict__)
-
-    def test_to_dict_with_arg(self):
-        cy = City()
-        with self.assertRaises(TypeError):
-            cy.to_dict(None)
+class test_inherit_basemodel(unittest.TestCase):
+    """Test if user inherit from BaseModel"""
+    def test_instance(self):
+        """check if user is an instance of BaseModel"""
+        user = City()
+        self.assertIsInstance(user, City)
+        self.assertTrue(issubclass(type(user), BaseModel))
+        self.assertEqual(str(type(user)), "<class 'models.city.City'>")
 
 
-if __name__ == "__main__":
+class test_Amenity_BaseModel(unittest.TestCase):
+    """Testing City class"""
+    def test_instances(self):
+        with patch('models.city'):
+            instance = City()
+            self.assertEqual(type(instance), City)
+            instance.name = "OnePiece"
+            instance.state_id = "3344-SiliconValley"
+            expectec_attrs_types = {
+                    "id": str,
+                    "created_at": datetime,
+                    "updated_at": datetime,
+                    "name": str,
+                    "state_id": str
+                    }
+            inst_dict = instance.to_dict()
+            expected_dict_attrs = [
+                    "id",
+                    "created_at",
+                    "updated_at",
+                    "name",
+                    "state_id",
+                    "__class__"
+                    ]
+            self.assertCountEqual(inst_dict.keys(), expected_dict_attrs)
+            self.assertEqual(inst_dict['name'], 'OnePiece')
+            self.assertEqual(inst_dict['state_id'], '3344-SiliconValley')
+            self.assertEqual(inst_dict['__class__'], 'City')
+
+            for attr, types in expectec_attrs_types.items():
+                with self.subTest(attr=attr, typ=types):
+                    self.assertIn(attr, instance.__dict__)
+                    self.assertIs(type(instance.__dict__[attr]), types)
+            self.assertEqual(instance.name, "OnePiece")
+            self.assertEqual(instance.state_id, "3344-SiliconValley")
+
+    def test_City_id_and_createat(self):
+        """testing id for every user"""
+        user_1 = City()
+        sleep(2)
+        user_2 = City()
+        sleep(2)
+        user_3 = City()
+        sleep(2)
+        list_users = [user_1, user_2, user_3]
+        for instance in list_users:
+            user_id = instance.id
+            with self.subTest(user_id=user_id):
+                self.assertIs(type(user_id), str)
+        self.assertNotEqual(user_1.id, user_2.id)
+        self.assertNotEqual(user_1.id, user_3.id)
+        self.assertNotEqual(user_2.id, user_3.id)
+        self.assertTrue(user_1.created_at <= user_2.created_at)
+        self.assertTrue(user_2.created_at <= user_3.created_at)
+        self.assertNotEqual(user_1.created_at, user_2.created_at)
+        self.assertNotEqual(user_1.created_at, user_3.created_at)
+        self.assertNotEqual(user_3.created_at, user_2.created_at)
+
+    def test_str_method(self):
+        """
+        Testin str magic method
+        """
+        inst = City()
+        str_output = "[City] ({}) {}".format(inst.id, inst.__dict__)
+        self.assertEqual(str_output, str(inst))
+
+    @patch('models.storage')
+    def test_save_method(self, mock_storage):
+        """Testing save method and if it update"""
+        instance5 = City()
+        created_at = instance5.created_at
+        sleep(2)
+        updated_at = instance5.updated_at
+        instance5.save()
+        new_created_at = instance5.created_at
+        sleep(2)
+        new_updated_at = instance5.updated_at
+        self.assertNotEqual(updated_at, new_updated_at)
+        self.assertEqual(created_at, new_created_at)
+        self.assertTrue(mock_storage.save.called)
+
+if __name__ == '__main__':
     unittest.main()
